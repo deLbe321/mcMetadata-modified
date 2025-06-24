@@ -2,11 +2,10 @@ import os
 import stashapi.log as log
 from utils.files import download_image
 
-# Constants
-BATCH_SIZE = 100
-
 
 def process_all_performers(stash, settings, api_key):
+    BATCH_SIZE = int(settings["batch_size"])
+
     count = stash.find_performers(
         f={},
         filter={"per_page": 1},
