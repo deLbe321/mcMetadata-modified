@@ -4,7 +4,7 @@ import sqlite3
 import sys
 import stashapi.log as log
 from stashapi.stashapp import StashInterface
-from performer import process_all_performers
+from performer import process_all_performers, process_performer
 from scene import process_all_scenes, process_scene
 from utils.settings import read_settings, update_setting
 
@@ -88,10 +88,19 @@ match mode:
 
         scene_id = PLUGIN_ARGS["hookContext"]["id"]
         scene = stash.find_scene(scene_id)
-        stash_ids = scene["stash_ids"]
-        if stash_ids is not None and len(stash_ids) > 0:
+        if scene is not None and scene['organized'] is True:
             log.info("Running scene updater")
             process_scene(scene, stash, SETTINGS, cursor, api_key)
+    case "Performer.Update.Post":
+        if not SETTINGS["enable_hook"]:
+            log.debug("Hook disabled")
+            sys.exit(0)
+        
+        performer_id = PLUGIN_ARGS["hookContext"]["id"]
+        performer = stash.find_performer(performer_id)
+        if performer is not None:
+            log.info("Running performer updater")
+            process_performer(performer, SETTINGS, api_key, True)
 
 
 # commit db changes & cleanup

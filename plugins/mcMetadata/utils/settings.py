@@ -22,6 +22,7 @@ SETTINGS_BOOLEANS = [
     "enable_renamer",
     "renamer_ignore_files_in_path",
     "renamer_enable_mark_organized",
+    "extract_backdrop"
 ]
 VALID_MEDIA_SERVERS = ["emby", "jellyfin"]
 

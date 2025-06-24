@@ -3,25 +3,26 @@ import os
 INDENTED_NEWLINE = "\n    "
 
 
-def build_nfo_xml(scene):
+def build_nfo_xml(scene, settings):
     ret = """<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <movie>
     <name>{title}</name>
     <title>{title}</title>
     <originaltitle>{title}</originaltitle>
     <sorttitle>{title}</sorttitle>
-    <criticrating>{custom_rating}</criticrating>
-    <rating>{rating}</rating>
-    <userrating>{rating}</userrating>
+    <director>{director}</director>
+    <{default_rating}>{rating}</{default_rating}>
     <plot><![CDATA[{details}]]></plot>
     <premiered>{date}</premiered>
     <releasedate>{date}</releasedate>
     <year>{year}</year>
     <studio>{studio}</studio>{performers}
-    <genre>Adult</genre>{tags}
+    <genre>{genre}</genre>{tags}
     <uniqueid type="stash">{id}</uniqueid>
 </movie>"""
 
+    default_rating = settings.get("default_rating", "userrating")
+    genre = settings.get("genre", "Adult")
     id = scene["id"]
     details = scene["details"] or ""
 
@@ -31,11 +32,9 @@ def build_nfo_xml(scene):
     else:
         title = os.path.basename(os.path.normpath(scene["files"][0]["path"]))
 
-    custom_rating = ""
     rating = ""
     if scene["rating100"] is not None:
         rating = round(int(scene["rating100"]) / 10)
-        custom_rating = scene["rating100"]
 
     date = ""
     year = ""
@@ -46,6 +45,10 @@ def build_nfo_xml(scene):
     studio = ""
     if scene["studio"] is not None:
         studio = scene["studio"]["name"]
+    
+    director = ""
+    if scene["director"] is not None:
+        director = scene["director"]
 
     performers = INDENTED_NEWLINE
     i = 0
@@ -78,8 +81,10 @@ def build_nfo_xml(scene):
 
     return ret.format(
         title=title,
-        custom_rating=custom_rating,
+        director=director,
+        default_rating=default_rating,
         rating=rating,
+        genre=genre,
         id=id,
         tags=tags,
         date=date,
