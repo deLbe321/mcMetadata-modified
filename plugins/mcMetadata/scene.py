@@ -143,6 +143,11 @@ def __rename_video(scene, settings, cursor):
         return video_path
 
     # rename/move video file. Will return False if it errors
+    source_dirname = os.path.dirname(video_path)
+    target_dirname = os.path.dirname(expected_path)
+    custom_nfo_name = settings.get("custom_nfo_name", None)
+    custom_poster_name = settings.get("custom_poster_name", None)
+
     video_renamed_path = rename_file(video_path, expected_path, settings)
     if not video_renamed_path:
         return video_path
@@ -157,21 +162,46 @@ def __rename_video(scene, settings, cursor):
 
     # locate any existing metadata files, rename them as well
     potential_nfo_path = replace_file_ext(video_path, "nfo")
+    target_nfo_path = replace_file_ext(video_renamed_path, "nfo")
+    if custom_nfo_name is not None and len(custom_nfo_name) > 0:
+        potential_nfo_path = os.path.join(
+            source_dirname, custom_nfo_name
+        )
+        target_nfo_path = os.path.join(
+            target_dirname, custom_nfo_name
+        )
     if os.path.exists(potential_nfo_path):
         log.debug(f"Relocating existing NFO file: {potential_nfo_path}")
         rename_file(
-            potential_nfo_path, replace_file_ext(video_renamed_path, "nfo"), settings
+            potential_nfo_path, target_nfo_path, settings
         )
 
     potential_poster_path = replace_file_ext(video_path, "jpg", "-poster")
+    target_poster_path = replace_file_ext(video_renamed_path, "jpg", "-poster")
+    if custom_poster_name is not None and len(custom_poster_name) > 0:
+        potential_poster_path = os.path.join(
+            source_dirname, custom_poster_name
+        )
+        target_poster_path = os.path.join(
+            target_dirname, custom_poster_name
+        )
     if os.path.exists(potential_poster_path):
         log.debug(f"Relocating existing Poster image: {potential_poster_path}")
         rename_file(
             potential_poster_path,
-            replace_file_ext(video_renamed_path, "jpg", "-poster"),
+            target_poster_path,
             settings,
         )
 
+    potential_backdrop_path = os.path.join(source_dirname, "backdrop.jpg")
+    target_backdrop_path = os.path.join(target_dirname, "backdrop.jpg")
+    if os.path.exists(potential_backdrop_path):
+        log.debug(f"Relocating existing Backdrop image: {potential_backdrop_path}")
+        rename_file(
+            potential_backdrop_path,
+            target_backdrop_path,
+            settings,
+        )
     return video_renamed_path
 
 
