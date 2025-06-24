@@ -4,35 +4,36 @@ url: https://github.com/carrotwaxr/stash-plugins/tree/main/mcMetadata
 version: 0.0.3
 exec:
   - python
-  - "{pluginDir}/mcMetadata.py"
+  - '{pluginDir}/mcMetadata.py'
 interface: raw
 hooks:
   - name: hook_mcmetadata
     description: Organize/rename video files and create/update metadata files when you update a scene.
     triggeredBy:
       - Scene.Update.Post
+      - Performer.Update.Post
 tasks:
-  - name: "Disable"
+  - name: 'Disable'
     description: Disable the on Scene Update hook
     defaultArgs:
       mode: disable
-  - name: "Enable"
+  - name: 'Enable'
     description: Enable the on Scene Update hook
     defaultArgs:
       mode: enable
-  - name: "Toggle Dry Run"
+  - name: 'Toggle Dry Run'
     description: Enable/disable dry-run mode
     defaultArgs:
       mode: dryrun
-  - name: "Toggle Renamer"
+  - name: 'Toggle Renamer'
     description: Enable/disable file renaming
     defaultArgs:
       mode: renamer
-  - name: "Bulk Update"
+  - name: 'Bulk Update'
     description: Organize/rename video files and create/update metadata files for all scenes based on your config.
     defaultArgs:
       mode: bulk
-  - name: "Bulk Update Performers"
+  - name: 'Bulk Update Performers'
     description: Copy all performer images to your chosen Media Center's people folder.
     defaultArgs:
       mode: performers

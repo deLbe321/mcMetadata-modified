@@ -6,7 +6,6 @@ from utils.files import download_image, rename_file, replace_file_ext
 from utils.nfo import build_nfo_xml
 from utils.replacer import get_new_path
 
-BATCH_SIZE = 100
 IMPOSSIBLE_PATH = "$%^&@"
 QUERY_WHERE_STASH_ID_NOT_NULL = {
     "stash_id_endpoint": {
@@ -18,8 +17,9 @@ QUERY_WHERE_STASH_ID_NOT_NULL = {
 
 
 def process_all_scenes(stash, settings, cursor, api_key):
+    BATCH_SIZE = int(settings["batch_size"])
+
     count = stash.find_scenes(
-        f=QUERY_WHERE_STASH_ID_NOT_NULL,
         filter={"per_page": 1},
         get_count=True,
     )[0]
@@ -35,7 +35,6 @@ def process_all_scenes(stash, settings, cursor, api_key):
         log.debug(f"Processing {str(start)}-{str(end)}")
 
         scenes = stash.find_scenes(
-            f=QUERY_WHERE_STASH_ID_NOT_NULL,
             filter={"page": r, "per_page": BATCH_SIZE},
         )
 
@@ -45,30 +44,44 @@ def process_all_scenes(stash, settings, cursor, api_key):
 
 def process_scene(scene, stash, settings, cursor, api_key):
     try:
-        log.debug(f"Processing Scene ID: {scene['id']}")
+        if scene['organized'] is True:
+            log.debug(f"Processing Scene ID: {scene["id"]}")
+            scene = __hydrate_scene(scene, stash)
+            # rename/move primary video file if settings configured for that
+            # if not, function will just return the current path and we'll proceed with that
+            target_video_path = __rename_video(scene, settings, cursor)
+            dirname = os.path.dirname(target_video_path)
 
-        scene = __hydrate_scene(scene, stash)
-        # rename/move primary video file if settings configured for that
-        # if not, function will just return the current path and we'll proceed with that
-        target_video_path = __rename_video(scene, settings, cursor)
+            # overwrite nfo named after file, at file location (use renamed path if applicable)
+            nfo_path = replace_file_ext(target_video_path, "nfo")
+            if settings["custom_nfo_name"] is not None and len(settings["custom_nfo_name"]) > 0:
+                # if custom nfo name, use it instead of default
+                nfo_path = os.path.join(dirname, settings["custom_nfo_name"])
+            __write_nfo(scene, nfo_path, settings)
 
-        # overwrite nfo named after file, at file location (use renamed path if applicable)
-        nfo_path = replace_file_ext(target_video_path, "nfo")
-        __write_nfo(scene, nfo_path, settings)
+            # copy any performer images to people directory
 
-        # copy any performer images to people directory
+            for performer in scene["performers"] or []:
+                try:
+                    process_performer(performer, settings, api_key)
+                except Exception as err:
+                    log.error(f"Error processing performer image: {str(err)}")
 
-        for performer in scene["performers"] or []:
-            try:
-                process_performer(performer, settings, api_key)
-            except Exception as err:
-                log.error(f"Error processing performer image: {str(err)}")
-
-        # download any missing artwork images from stash into path
-        poster_path = replace_file_ext(target_video_path, "jpg", "-poster")
-        if not os.path.exists(poster_path):
+            # download any missing artwork images from stash into path
             screenshot_url = f"{scene['paths']['screenshot']}&apikey={api_key}"
-            download_image(screenshot_url, poster_path, settings)
+            poster_path = replace_file_ext(target_video_path, "jpg", "-poster")
+            if settings["custom_poster_name"] is not None and len(settings["custom_poster_name"]) > 0:
+                # if custom poster name, use it instead of default
+                poster_path = os.path.join(dirname, settings["custom_poster_name"])
+            
+            if not os.path.exists(poster_path):
+                download_image(screenshot_url, poster_path, settings)
+            
+            # download backdrop image from stash into path
+            if settings["extract_backdrop"]:
+                backdrop_path = os.path.join(dirname, "backdrop.jpg")
+                if not os.path.exists(backdrop_path):
+                    download_image(screenshot_url, backdrop_path, settings)
     except Exception as err:
         log.error(f"Error processing Scene ID {scene['id']}: {str(err)}")
 
@@ -241,7 +254,7 @@ def __db_rename(scene_id, old_filepath, new_filepath, settings, cursor):
 
 def __write_nfo(scene, filepath, settings):
     try:
-        nfo_xml = build_nfo_xml(scene)
+        nfo_xml = build_nfo_xml(scene, settings)
         if settings["dry_run"] is False:
             f = open(filepath, "w", encoding="utf-8-sig")
             f.write(nfo_xml)
