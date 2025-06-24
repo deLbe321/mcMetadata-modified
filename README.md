@@ -2,9 +2,20 @@
 
 This repository holds modified version of mcMetadata by carrotwaxr for extending the functionality of [Stash](https://github.com/stashapp/stash) adult media manager.
 
-Modification made to increase compability and interobility between mcMetadata, nfSceneParser (other stash plugin) Jellyfin.Plugin.Stash.
+Modification made to increase compability and interobility between mcMetadata, nfoSceneParser (other stash plugin) and Jellyfin.Plugin.Stash.
 
-I didn't create pull request to the original repository and created fork instead because some modifications felt arbitrary, tailored to my specific needs and could break other people's workflows (eg. removal of stashId requirement or custom_tags field).
+Here is my workflow for stash, nfo files and Jellyfin:
+- Create two folders: /video/organized and /video/unorganized
+- Stash reads files from both folders while Jellyfin reads only from organized
+- Place new content to /video/unorganized
+- Once all the information are filled and video is marked as organized mcMetadata plugin kicks in
+- mcMetada moves files from unorganized folder to organized, each movie in separate folder eg /videos/organized/<Studio>/<Title> (<Date>)/<Title> (<Date>).mp4
+- Once the file has been moved, in the same folder movie.nfo, folder.jpg and backdrop.jpg are being generated
+- Jellyfin scans /video/organized folder and load data from movie.nfo, folder.jpg and backdrop.jpg files
+- Jellyfin displays rating from "rating" field and pulls any additional data from Stash using Jellyfin.Plugin.Stash
+- Jellyfin.Plugin.Stash can be set to load tags for scenes and performers which then can be used to filter content
+- Jellyfin updates movie.nfo file if necessary
+- nfoSceneParser can read movie.nfo file and fill most of the information back if necessary (including rating, studio and tags)
 
 ## What was added or changed:
 
@@ -18,3 +29,10 @@ I didn't create pull request to the original repository and created fork instead
 - added exporting of director for scene
 - removed custom_rating field
 - added posibility to change default genere for scenes
+
+## Disclaimers
+
+I didn't create pull request to the original repository and created fork instead because some modifications felt arbitrary, tailored to my specific needs and could break other people's workflows (eg. removal of stashId requirement or custom_tags field).
+
+Additional modifications has been merged to Jellyfin.Plugin.Stash repository to make the workflow possible.
+Additional modifications has been made and are waiting to be merge into Stash CummunityScripts/nfoSceneParser.
